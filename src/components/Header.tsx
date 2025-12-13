@@ -1,0 +1,272 @@
+import { Link, useLocation } from "react-router-dom";
+import { BookOpen, Home, CreditCard, BarChart3, Menu, X, ChevronDown, Library, Map, ClipboardCheck } from "lucide-react";
+import { useState } from "react";
+import { cn } from "@/lib/utils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const Header = () => {
+  const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const levels = ["A1", "A2", "B1", "B2"];
+
+  // --- LOGIKA: SEMBUNYIKAN HEADER DI HALAMAN SIMULASI ---
+  if (location.pathname.includes("/simulation")) {
+    return null;
+  }
+
+  return (
+    <header className="border-b-4 border-foreground bg-background sticky top-0 z-50 w-full">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between h-16">
+          
+          {/* LOGO */}
+          <Link to="/" className="flex items-center gap-2 font-bold text-lg sm:text-xl tracking-tight shrink-0">
+            <span className="bg-foreground text-background px-2 py-1">DEUTSCH</span>
+            <span>LERNEN</span>
+          </Link>
+
+          {/* DESKTOP NAVIGATION */}
+          <nav className="hidden xl:flex items-center gap-2 lg:gap-4">
+            
+            {/* 1. HOME */}
+            <Link
+              to="/"
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 font-medium transition-all border-2 rounded-md",
+                location.pathname === "/"
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-background text-foreground border-transparent hover:border-foreground"
+              )}
+            >
+              <Home size={18} />
+              <span className="hidden lg:inline">Home</span>
+            </Link>
+
+            {/* 2. DROPDOWN MATERI */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 font-medium transition-all border-2 border-transparent hover:border-foreground rounded-md outline-none focus:border-foreground data-[state=open]:border-foreground group">
+                <Library size={18} />
+                <span>Materi</span>
+                <ChevronDown size={16} className="group-data-[state=open]:rotate-180 transition-transform" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-40 border-2 border-foreground bg-background shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none mt-2">
+                {levels.map((level) => (
+                  <DropdownMenuItem key={`mat-${level}`} asChild className="focus:bg-accent focus:text-foreground cursor-pointer">
+                    <Link to={`/material/${level}`} className="w-full font-bold py-2">
+                      Materi {level}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* 3. DROPDOWN WORTSCHATZ */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 px-3 py-2 font-medium transition-all border-2 border-transparent hover:border-foreground rounded-md outline-none focus:border-foreground data-[state=open]:border-foreground group">
+                <BookOpen size={18} />
+                <span>Wortschatz</span>
+                <ChevronDown size={16} className="group-data-[state=open]:rotate-180 transition-transform" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48 border-2 border-foreground bg-background shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none mt-2">
+                {levels.map((level) => (
+                  <DropdownMenuItem key={`voc-${level}`} asChild className="focus:bg-accent focus:text-foreground cursor-pointer">
+                    <Link to={`/level/${level}`} className="w-full font-bold py-2">
+                      Kosakata {level}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* 4. DROPDOWN UJIAN (CLEAN VERSION) */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className={cn(
+                "flex items-center gap-2 px-3 py-2 font-medium transition-all border-2 border-transparent hover:border-foreground rounded-md outline-none focus:border-foreground data-[state=open]:border-foreground group",
+                location.pathname.includes("EXAM") && "bg-foreground text-background border-foreground"
+              )}>
+                <ClipboardCheck size={18} />
+                <span>Ujian</span>
+                <ChevronDown size={16} className="group-data-[state=open]:rotate-180 transition-transform" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-48 border-2 border-foreground bg-background shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none mt-2">
+                {levels.map((level) => (
+                  <DropdownMenuItem key={`exam-${level}`} asChild className="focus:bg-accent focus:text-foreground cursor-pointer">
+                    <Link to={`/material/EXAM_${level}`} className="w-full font-bold py-2">
+                      Simulasi {level}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* 5. FLASHCARD */}
+            <Link
+              to="/flashcard"
+              className={cn(
+                "flex items-center gap-2 px-3 py-2 font-medium transition-all border-2 rounded-md",
+                location.pathname === "/flashcard"
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-background text-foreground border-transparent hover:border-foreground"
+              )}
+            >
+              <CreditCard size={18} />
+              <span className="hidden lg:inline">Flashcard</span>
+            </Link>
+
+            {/* 6. MEIN WEG */}
+            <DropdownMenu>
+              <DropdownMenuTrigger className={cn(
+                "flex items-center gap-2 px-3 py-2 font-medium transition-all border-2 rounded-md outline-none focus:border-foreground data-[state=open]:border-foreground group",
+                location.pathname.includes("/progress") || location.pathname.includes("/planner")
+                  ? "bg-foreground text-background border-foreground"
+                  : "bg-background text-foreground border-transparent hover:border-foreground"
+              )}>
+                <Map size={18} />
+                <span className="hidden lg:inline">Mein Weg</span>
+                <ChevronDown size={16} className="group-data-[state=open]:rotate-180 transition-transform" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 border-2 border-foreground bg-background shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-none mt-2">
+                <DropdownMenuItem asChild className="focus:bg-accent focus:text-foreground cursor-pointer p-0">
+                  <Link to="/progress" className="w-full font-bold py-3 px-2 flex items-center gap-2">
+                    <BarChart3 size={18} /> Statistik
+                  </Link>
+                </DropdownMenuItem>
+                <div className="h-[2px] bg-foreground w-full my-0"></div>
+                <DropdownMenuItem asChild className="focus:bg-accent focus:text-foreground cursor-pointer p-0">
+                  <Link to="/planner" className="w-full font-bold py-3 px-2 flex items-center gap-2">
+                    <Map size={18} /> Study Planner
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+          </nav>
+
+          {/* MOBILE MENU BUTTON */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="xl:hidden p-2 border-2 border-foreground rounded-md active:bg-accent active:text-accent-foreground transition-colors"
+          >
+            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* MOBILE NAVIGATION CONTENT */}
+        {mobileMenuOpen && (
+          <nav className="xl:hidden py-4 border-t-2 border-foreground animate-in slide-in-from-top-2 bg-background overflow-y-auto max-h-[calc(100vh-4rem)]">
+            <div className="flex flex-col gap-4 pb-8">
+              
+              <Link
+                to="/"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 font-bold border-2 border-transparent active:bg-accent mx-2 rounded-md transition-colors"
+              >
+                <Home size={20} /> Home
+              </Link>
+
+              {/* Group Materi */}
+              <div className="px-2">
+                <div className="px-2 pb-2 text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                  <Library size={14} /> Materi Pelajaran
+                </div>
+                <div className="grid grid-cols-4 gap-2 px-2">
+                  {levels.map((level) => (
+                    <Link
+                      key={`mob-mat-${level}`}
+                      to={`/material/${level}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-center py-2 border-2 border-foreground font-bold bg-background text-foreground shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[3px] active:translate-x-[3px] transition-all rounded-md"
+                    >
+                      {level}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Group Ujian */}
+              <div className="px-2 mt-2">
+                <div className="px-2 pb-2 text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                  <ClipboardCheck size={14} /> Simulasi Ujian
+                </div>
+                <div className="grid grid-cols-2 gap-2 px-2">
+                  {levels.map((level) => (
+                    <Link
+                      key={`mob-exam-${level}`}
+                      to={`/material/EXAM_${level}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="flex items-center justify-between px-3 py-3 border-2 border-foreground font-bold bg-red-50 text-red-900 shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[3px] active:translate-x-[3px] transition-all rounded-md"
+                    >
+                      <span>Simulasi {level}</span>
+                      <ChevronDown size={14} className="-rotate-90" />
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Group Wortschatz */}
+              <div className="px-2 mt-2">
+                <div className="px-2 pb-2 text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                  <BookOpen size={14} /> Wortschatz
+                </div>
+                <div className="grid grid-cols-4 gap-2 px-2">
+                  {levels.map((level) => (
+                    <Link
+                      key={`mob-voc-${level}`}
+                      to={`/level/${level}`}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="text-center py-2 border-2 border-foreground font-bold text-foreground bg-background active:bg-foreground active:text-background transition-colors rounded-md"
+                    >
+                      {level}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t-2 border-dashed border-foreground/30 my-2 mx-4"></div>
+              
+              <Link
+                to="/flashcard"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 font-medium border-2 border-transparent active:bg-accent mx-2 rounded-md transition-colors"
+              >
+                <CreditCard size={20} /> Flashcard
+              </Link>
+
+              {/* Group Mein Weg */}
+              <div className="px-2 mt-2">
+                 <div className="px-2 pb-2 text-xs font-black text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                  <Map size={14} /> Mein Weg
+                </div>
+                <div className="grid grid-cols-2 gap-2 px-2">
+                  <Link
+                    to="/progress"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-center py-3 border-2 border-foreground font-bold bg-yellow-100 text-foreground active:bg-yellow-200 transition-colors rounded-md"
+                  >
+                    Statistik
+                  </Link>
+                  <Link
+                    to="/planner"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-center py-3 border-2 border-foreground font-bold bg-blue-100 text-foreground active:bg-blue-200 transition-colors rounded-md"
+                  >
+                    Planner
+                  </Link>
+                </div>
+              </div>
+
+            </div>
+          </nav>
+        )}
+      </div>
+    </header>
+  );
+};
+
+export default Header;
