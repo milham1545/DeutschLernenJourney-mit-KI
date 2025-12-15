@@ -180,3 +180,17 @@ All colors MUST be HSL.
 .rotate-y-180 {
   transform: rotateY(180deg);
 }
+
+/* Untuk Microsoft Edge */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+
+/* Untuk Browser Lain (Jaga-jaga) */
+input::-webkit-credentials-auto-fill-button {
+    visibility: hidden;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+}

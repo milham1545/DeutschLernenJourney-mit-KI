@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type ActivityType = "word" | "doc" | "quiz" | "system";
 
@@ -6,40 +8,61 @@ export interface Activity {
   id: number;
   type: ActivityType;
   description: string;
-  timestamp: number; // Format waktu (Date.now())
+  created_at: string;
 }
 
 export const useActivityLog = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
+  const { user } = useAuth();
 
-  // Load log saat pertama kali dibuka
+  // 1. Fetch Log dari Supabase (Limit 20 terakhir)
   useEffect(() => {
-    const saved = localStorage.getItem("user_activities");
-    if (saved) {
-      setActivities(JSON.parse(saved));
+    if (!user) {
+        setActivities([]);
+        return;
     }
-  }, []);
 
-  // Fungsi untuk menambah log baru
-  const logActivity = (type: ActivityType, description: string) => {
-    const newActivity: Activity = {
-      id: Date.now(),
-      type,
-      description,
-      timestamp: Date.now(),
+    const fetchLogs = async () => {
+      const { data, error } = await supabase
+        .from("activity_logs")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (!error && data) {
+        setActivities(data as Activity[]);
+      }
     };
 
-    setActivities((prev) => {
-      // Simpan max 20 aktivitas terakhir saja biar memori aman
-      const updated = [newActivity, ...prev].slice(0, 20);
-      localStorage.setItem("user_activities", JSON.stringify(updated));
-      return updated;
-    });
+    fetchLogs();
+  }, [user]);
+
+  // 2. Fungsi Tambah Log
+  const logActivity = async (type: ActivityType, description: string) => {
+    if (!user) return;
+
+    const newLog = {
+        user_id: user.id,
+        type,
+        description
+    };
+
+    // Simpan ke DB
+    const { data } = await supabase.from("activity_logs").insert([newLog]).select();
+
+    // Update UI
+    if (data) {
+        setActivities((prev) => [data[0] as Activity, ...prev].slice(0, 20));
+    }
   };
 
-  // Helper: Ubah timestamp jadi "2 jam yang lalu"
-  const formatTimeAgo = (timestamp: number) => {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  // Helper Waktu (Supabase pakai format ISO string)
+  const formatTimeAgo = (isoString: string) => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
     if (seconds < 60) return "Baru saja";
     const minutes = Math.floor(seconds / 60);
     if (minutes < 60) return `${minutes} menit lalu`;

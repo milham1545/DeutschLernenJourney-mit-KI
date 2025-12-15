@@ -1,42 +1,66 @@
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const useProgramProgress = () => {
-  // State menyimpan ID dokumen yang sudah dicentang
-  // Contoh: ["ap_passport", "fsj_cv"]
-  const [checkedItems, setCheckedItems] = useState<string[]>([]);
+  const [checkedIds, setCheckedIds] = useState<string[]>([]);
+  const { user } = useAuth();
 
-  // Load dari LocalStorage saat pertama kali dibuka
+  // 1. Fetch Checklist dari Supabase
   useEffect(() => {
-    const saved = localStorage.getItem("mein_weg_progress");
-    if (saved) {
-      setCheckedItems(JSON.parse(saved));
+    if (!user) {
+        setCheckedIds([]);
+        return;
     }
-  }, []);
 
-  // Fungsi Toggle (Centang/Uncentang)
-  const toggleItem = (id: string) => {
-    setCheckedItems((prev) => {
-      let newItems;
-      if (prev.includes(id)) {
-        newItems = prev.filter((item) => item !== id); // Hapus
-      } else {
-        newItems = [...prev, id]; // Tambah
+    const fetchProgress = async () => {
+      const { data, error } = await supabase
+        .from("user_progress")
+        .select("requirement_id")
+        .eq("user_id", user.id);
+
+      if (!error && data) {
+        // Map data dari object {requirement_id: 'xyz'} jadi array ['xyz']
+        setCheckedIds(data.map((item) => item.requirement_id));
       }
-      
-      // Simpan otomatis
-      localStorage.setItem("mein_weg_progress", JSON.stringify(newItems));
-      return newItems;
-    });
+    };
+
+    fetchProgress();
+  }, [user]);
+
+  // 2. Toggle Checklist (Insert/Delete)
+  const toggleItem = async (reqId: string) => {
+    if (!user) return;
+
+    const exists = checkedIds.includes(reqId);
+
+    // Update UI Optimistic (Langsung ubah biar gak nunggu loading)
+    setCheckedIds((prev) => 
+      exists ? prev.filter((id) => id !== reqId) : [...prev, reqId]
+    );
+
+    if (exists) {
+      // Kalau sudah ada -> Hapus (Uncheck)
+      await supabase
+        .from("user_progress")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("requirement_id", reqId);
+    } else {
+      // Kalau belum ada -> Simpan (Check)
+      await supabase
+        .from("user_progress")
+        .insert([{ user_id: user.id, requirement_id: reqId }]);
+    }
   };
 
-  const isChecked = (id: string) => checkedItems.includes(id);
+  const isChecked = (reqId: string) => checkedIds.includes(reqId);
 
-  // Hitung persentase progress untuk suatu program
-  const getProgress = (requirementIds: string[]) => {
-    if (requirementIds.length === 0) return 0;
-    const checkedCount = requirementIds.filter(id => checkedItems.includes(id)).length;
-    return Math.round((checkedCount / requirementIds.length) * 100);
+  const getProgress = (reqIds: string[]) => {
+    if (reqIds.length === 0) return 0;
+    const completed = reqIds.filter((id) => checkedIds.includes(id)).length;
+    return Math.round((completed / reqIds.length) * 100);
   };
 
-  return { checkedItems, toggleItem, isChecked, getProgress };
+  return { toggleItem, isChecked, getProgress };
 };
