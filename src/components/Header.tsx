@@ -3,7 +3,7 @@ import {
   BookOpen, Home, BarChart3, Menu, X, ChevronDown, Library, 
   Map as MapIcon, 
   ClipboardCheck, PenTool, Book, Trophy, CreditCard, 
-  User, LogOut, LayoutDashboard // Tambah icon LayoutDashboard
+  User, LogOut, LayoutDashboard 
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -201,7 +201,7 @@ const Header = () => {
 
           <div className="flex items-center gap-2">
             
-            {/* USER LOGIN / PROFILE */}
+            {/* USER LOGIN / PROFILE (DESKTOP) */}
             <div className="hidden xl:block">
               {user ? (
                 <DropdownMenu>
@@ -217,7 +217,6 @@ const Header = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 border-2 border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] mt-2">
                     
-                    {/* BAGIAN EMAIL HEADER */}
                     <DropdownMenuLabel>
                       <div className="flex flex-col space-y-1">
                         <p className="text-sm font-medium leading-none truncate">{user.user_metadata.full_name || "User"}</p>
@@ -226,7 +225,6 @@ const Header = () => {
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
 
-                    {/* LINK KE DASHBOARD */}
                     <DropdownMenuItem asChild className="cursor-pointer font-bold">
                         <Link to="/dashboard" className="flex items-center w-full">
                             <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard Profile
@@ -235,7 +233,6 @@ const Header = () => {
 
                     <DropdownMenuSeparator />
                     
-                    {/* LOGOUT */}
                     <DropdownMenuItem className="font-bold text-red-600 cursor-pointer focus:text-red-600 focus:bg-red-50" onClick={handleSignOut}>
                        <LogOut className="mr-2 h-4 w-4" /> Keluar
                     </DropdownMenuItem>
@@ -269,17 +266,6 @@ const Header = () => {
           <nav className="xl:hidden py-4 border-t-2 border-foreground animate-in slide-in-from-top-2 bg-background overflow-y-auto max-h-[calc(100vh-4rem)]">
             <div className="flex flex-col gap-4 pb-8">
               
-              {/* DASHBOARD LINK DI MOBILE (PALING ATAS) */}
-              {user && (
-                 <Link
-                    to="/dashboard"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 font-bold border-2 border-blue-600 bg-blue-50 text-blue-700 mx-2 rounded-md transition-colors"
-                  >
-                    <LayoutDashboard size={20} /> Dashboard Profile
-                  </Link>
-              )}
-
               <Link
                 to="/"
                 onClick={() => setMobileMenuOpen(false)}
@@ -419,9 +405,19 @@ const Header = () => {
                 </div>
               </div>
 
-              {/* LOGOUT DI MOBILE */}
+              {/* LOGOUT & DASHBOARD LINK DI MOBILE (BAGIAN BAWAH) */}
               {user ? (
-                <div className="px-4 mt-4">
+                <div className="px-4 mt-4 flex flex-col gap-3">
+                  
+                  {/* TOMBOL DASHBOARD PROFILE (PINDAH KESINI) */}
+                  <Link
+                    to="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="flex items-center justify-center gap-3 px-4 py-3 font-bold border-2 border-foreground bg-white text-foreground hover:bg-slate-100 active:bg-slate-200 rounded-md transition-colors"
+                  >
+                    <LayoutDashboard size={20} /> Dashboard Profile
+                  </Link>
+
                   <Button variant="destructive" className="w-full font-bold border-2 border-black" onClick={handleSignOut}>
                     Keluar
                   </Button>
