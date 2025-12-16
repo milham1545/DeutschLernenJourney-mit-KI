@@ -177,23 +177,22 @@ const FlashcardPage = () => {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <section className="border-b-4 border-foreground bg-secondary sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-8">
+      <section className="border-b-4 border-foreground bg-secondary sticky top-16 z-40">
+        <div className="container mx-auto px-4 py-4"> {/* Padding diperkecil (py-4) */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <h1 className="text-3xl md:text-4xl font-bold mb-0">
-                <span className="bg-foreground text-background px-4 py-2">FLASHCARD</span>
+            <h1 className="text-2xl md:text-3xl font-bold mb-0">
+                <span className="bg-foreground text-background px-4 py-1">FLASHCARD</span>
             </h1>
 
             {/* KONTROL LEVEL & MODE TAMPILAN */}
             <div className="flex flex-wrap items-center gap-4">
-                {/* Level Buttons */}
                 <div className="flex gap-2">
                     {AVAILABLE_LEVELS.map((lvl) => (
                     <button
                         key={lvl}
                         onClick={() => { setSelectedLevel(lvl); setCurrentIdx(0); setViewMode("deck"); }}
                         className={cn(
-                        "px-4 py-2 font-bold border-4 border-foreground transition-all text-sm",
+                        "px-3 py-1 font-bold border-4 border-foreground transition-all text-sm",
                         selectedLevel === lvl
                             ? "bg-foreground text-background shadow-sm"
                             : "bg-card hover:bg-accent"
@@ -206,7 +205,6 @@ const FlashcardPage = () => {
 
                 <div className="h-8 w-1 bg-foreground/20 hidden md:block"></div>
 
-                {/* Toggle Deck / List */}
                 <div className="flex gap-2">
                     <button
                         onClick={() => setViewMode("deck")}
@@ -238,8 +236,8 @@ const FlashcardPage = () => {
           </div>
           
           {isShuffled && viewMode === "deck" && (
-            <div className="mt-4 inline-block px-3 py-1 bg-accent border-2 border-foreground text-sm">
-              🔀 Mode acak aktif
+            <div className="mt-2 inline-block px-3 py-1 bg-accent border-2 border-foreground text-xs font-bold">
+              🔀 ACAK
             </div>
           )}
         </div>

@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { 
   LogOut, BookOpen, Map as MapIcon, GraduationCap, Settings, 
   ExternalLink, CheckCircle2, History, Loader2, Eye, EyeOff, Dices, 
-  Check, X as XIcon, AlertCircle, ShieldCheck // <--- Tambah Icon ShieldCheck
+  Check, X as XIcon, AlertCircle, ShieldCheck 
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -50,10 +50,7 @@ const DashboardPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [tempAvatar, setTempAvatar] = useState(""); 
   
-  // State Hapus Akun
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  // --- STATE ADMIN CHECK (BARU) ---
+  // --- STATE ADMIN CHECK ---
   const [isAdmin, setIsAdmin] = useState(false);
 
   // --- STATE USERNAME CHECK ---
@@ -61,12 +58,12 @@ const DashboardPage = () => {
 
   const [viewProgram, setViewProgram] = useState("aupair");
 
-  // 1. CEK APAKAH USER ITU ADMIN? (LOGIKA BARU)
+  // 1. CEK APAKAH USER ITU ADMIN?
   useEffect(() => {
     const checkRole = async () => {
       if (!user) return;
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from("profiles")
           .select("role")
           .eq("id", user.id)
@@ -92,7 +89,6 @@ const DashboardPage = () => {
       setTempAvatar(user.user_metadata.avatar_url || "");
       setEditPassword(""); 
       setUsernameStatus("idle");
-      setShowDeleteConfirm(false); 
     }
   }, [user, openDialog]);
 
@@ -212,7 +208,6 @@ const DashboardPage = () => {
                     {user.user_metadata.full_name || "User"}
                   </h2>
                   
-                  {/* Badge Admin (Hanya hiasan visual kalau admin) */}
                   {isAdmin && (
                     <span className="mb-2 px-2 py-0.5 bg-red-100 text-red-600 border border-red-200 rounded text-[10px] font-black uppercase tracking-widest animate-pulse">
                       ADMINISTRATOR
@@ -228,7 +223,6 @@ const DashboardPage = () => {
 
                   <div className="w-full space-y-2">
                       
-                      {/* --- TOMBOL RAHASIA ADMIN (DI SINI POSISINYA) --- */}
                       {isAdmin && (
                         <Link to="/admin">
                             <Button className="w-full bg-slate-900 text-white hover:bg-slate-800 border-2 border-slate-900 shadow-sm font-bold mb-2">
@@ -244,7 +238,12 @@ const DashboardPage = () => {
                             </Button>
                         </DialogTrigger>
                         
-                        <DialogContent className="sm:max-w-md border-4 border-foreground shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] max-h-[85vh] overflow-y-auto">
+                        {/* --- PERBAIKAN DIALOG EDIT PROFILE --- 
+                            w-[95%] : Agar tidak nempel pinggir layar di HP
+                            max-w-md : Agar tidak terlalu lebar di Desktop
+                            rounded-xl : Biar sudutnya manis
+                        */}
+                        <DialogContent className="w-[95%] sm:max-w-md rounded-xl border-4 border-foreground max-h-[85vh] overflow-y-auto">
                             <DialogHeader>
                                 <DialogTitle className="text-2xl font-black uppercase">Edit Profile</DialogTitle>
                                 <DialogDescription>Ubah detail akun dan personalisasikan profilmu.</DialogDescription>
@@ -261,7 +260,6 @@ const DashboardPage = () => {
                                     </Button>
                                 </div>
 
-                                {/* EDIT NAMA */}
                                 <div className="space-y-1">
                                     <Label htmlFor="name" className="font-bold">Nama Lengkap</Label>
                                     <Input 
@@ -272,7 +270,6 @@ const DashboardPage = () => {
                                     />
                                 </div>
 
-                                {/* EDIT USERNAME */}
                                 <div className="space-y-1">
                                     <Label htmlFor="username" className="font-bold">Username</Label>
                                     <div className="relative">
@@ -296,7 +293,6 @@ const DashboardPage = () => {
                                     {usernameStatus === "taken" && <p className="text-xs font-bold text-red-600 flex items-center gap-1"><AlertCircle className="w-3 h-3"/> Username sudah dipakai.</p>}
                                 </div>
 
-                                {/* EDIT LEVEL */}
                                 <div className="space-y-1">
                                     <Label className="font-bold">Target Level</Label>
                                     <Select value={editLevel} onValueChange={setEditLevel}>
@@ -312,7 +308,6 @@ const DashboardPage = () => {
                                     </Select>
                                 </div>
 
-                                {/* EDIT PASSWORD */}
                                 <div className="space-y-1">
                                     <Label htmlFor="pass" className="font-bold">Password Baru <span className="text-slate-400 font-normal text-xs">(Opsional)</span></Label>
                                     <div className="relative">
@@ -334,7 +329,6 @@ const DashboardPage = () => {
                                     </div>
                                 </div>
 
-                                {/* ZONA BAHAYA: HAPUS AKUN */}
                                 <div className="pt-6 border-t border-slate-200 mt-4 flex flex-col items-center justify-center">
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
@@ -345,7 +339,11 @@ const DashboardPage = () => {
                                                 <LogOut className="w-3 h-3" /> Hapus Akun Saya
                                             </button>
                                         </AlertDialogTrigger>
-                                        <AlertDialogContent className="border-4 border-red-600 shadow-[8px_8px_0px_0px_rgba(220,38,38,1)]">
+                                        
+                                        {/* --- PERBAIKAN POPUP HAPUS AKUN --- 
+                                            w-[95%] sm:max-w-md rounded-xl
+                                        */}
+                                        <AlertDialogContent className="w-[95%] sm:max-w-md rounded-xl border-4 border-red-600">
                                             <AlertDialogHeader>
                                                 <AlertDialogTitle className="text-2xl font-black text-red-600 uppercase">
                                                     Yakin ingin menghapus?
