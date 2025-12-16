@@ -29,6 +29,7 @@ const Header = () => {
 
   const handleSignOut = async () => {
     await signOut();
+    setMobileMenuOpen(false);
     navigate("/login");
   };
 
@@ -241,7 +242,7 @@ const Header = () => {
               ) : (
                 <div className="flex gap-2">
                   <Button asChild variant="ghost" size="sm" className="font-bold">
-                    <Link to="/login">Masuk</Link>
+                    <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Masuk</Link>
                   </Button>
                   <Button asChild className="font-bold border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:shadow-none active:translate-y-[2px] transition-all">
                     <Link to="/register">Daftar</Link>
