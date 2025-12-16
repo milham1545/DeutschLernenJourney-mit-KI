@@ -1,20 +1,25 @@
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
-import { levels } from "@/data/lessons";
+import { ArrowLeft, ArrowRight, Loader2, AlertTriangle } from "lucide-react";
 import { loadProgress } from "@/utils/progress";
 import LessonCard from "@/components/LessonCard";
 import { Button } from "@/components/ui/button";
+import { useLevelData } from "@/hooks/useLevelData"; // Import Hook Baru
 
 const LevelPage = () => {
   const { levelId } = useParams<{ levelId: string }>();
+  
+  // Panggil Hook Database
+  const { level, loading, error } = useLevelData(levelId);
+  
   const [progressData, setProgressData] = useState<Record<string, string>>({});
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const level = levels.find((l) => l.id === levelId);
-  const currentIndex = levels.findIndex((l) => l.id === levelId);
-  const prevLevel = currentIndex > 0 ? levels[currentIndex - 1] : null;
-  const nextLevel = currentIndex < levels.length - 1 ? levels[currentIndex + 1] : null;
+  // Logic Navigasi Next/Prev Level (Hardcoded list ID karena tabel levels cuma dikit)
+  const levelList = ["A1", "A2", "B1", "B2"];
+  const currentIndex = levelList.indexOf(levelId || "");
+  const prevLevelId = currentIndex > 0 ? levelList[currentIndex - 1] : null;
+  const nextLevelId = currentIndex < levelList.length - 1 ? levelList[currentIndex + 1] : null;
 
   useEffect(() => {
     if (levelId) {
@@ -26,13 +31,29 @@ const LevelPage = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
-  if (!level) {
+  // --- TAMPILAN LOADING ---
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center border-4 border-foreground p-8">
-          <h1 className="text-4xl font-bold mb-4">Level tidak ditemukan</h1>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+        <p className="font-bold text-slate-500 animate-pulse">Wait yaww!! Sedang menyiapkan wortschartz...</p>
+      </div>
+    );
+  }
+
+  // --- TAMPILAN ERROR / NOT FOUND ---
+  if (error || !level) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center border-4 border-foreground p-8 rounded-xl shadow-lg max-w-md bg-white">
+          <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-black mb-2">Level Tidak Ditemukan</h1>
+          <p className="text-slate-600 mb-6">
+            Mungkin terjadi kesalahan atau koneksi bermasalah.
+            <br/><span className="text-xs text-red-400 font-mono mt-2 block">{error}</span>
+          </p>
           <Link to="/">
-            <Button>Kembali ke Home</Button>
+            <Button size="lg" className="font-bold">Kembali ke Home</Button>
           </Link>
         </div>
       </div>
@@ -50,7 +71,7 @@ const LevelPage = () => {
         <div className="container mx-auto px-4 py-12">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground mb-6 font-bold transition-colors"
           >
             <ArrowLeft size={18} />
             Kembali ke Home
@@ -59,22 +80,22 @@ const LevelPage = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
               <div className="flex items-center gap-4 mb-4">
-                <span className="text-6xl font-bold bg-foreground text-background px-4 py-2">
+                <span className="text-4xl md:text-6xl font-black bg-foreground text-background px-4 py-2 shadow-[4px_4px_0px_0px_rgba(255,255,255,0.5)]">
                   {level.id}
                 </span>
               </div>
-              <h1 className="text-3xl md:text-4xl font-bold mb-2">{level.title}</h1>
-              <p className="text-lg text-muted-foreground">{level.description}</p>
+              <h1 className="text-3xl md:text-4xl font-black mb-2 uppercase tracking-tight">{level.title}</h1>
+              <p className="text-lg text-muted-foreground font-medium">{level.description}</p>
             </div>
             
-            <div className="border-4 border-foreground bg-card p-6 text-center min-w-[200px]">
-              <p className="text-sm text-muted-foreground mb-2">Progress</p>
-              <p className="text-4xl font-bold">
-                {completedCount}/{level.subSections.length}
+            <div className="border-4 border-foreground bg-white p-6 text-center min-w-[200px] shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rounded-lg">
+              <p className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-2">Progress Belajar</p>
+              <p className="text-4xl font-black">
+                {completedCount}<span className="text-slate-300">/</span>{level.subSections.length}
               </p>
-              <div className="mt-3 h-2 bg-accent border border-foreground">
+              <div className="mt-4 h-3 bg-slate-100 border-2 border-foreground rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-foreground transition-all"
+                  className="h-full bg-green-500 transition-all duration-1000 ease-out"
                   style={{
                     width: `${(completedCount / level.subSections.length) * 100}%`,
                   }}
@@ -86,37 +107,44 @@ const LevelPage = () => {
       </section>
 
       {/* Content */}
-      <section className="container mx-auto px-4 py-8">
-        <div className="space-y-4">
-          {level.subSections.map((subSection) => (
-            <LessonCard
-              key={subSection.id}
-              levelId={level.id}
-              subSection={subSection}
-              onProgressUpdate={handleProgressUpdate}
-            />
-          ))}
-        </div>
+      <section className="container mx-auto px-4 py-12">
+        {level.subSections.length > 0 ? (
+          <div className="space-y-6">
+            {level.subSections.map((subSection) => (
+              <LessonCard
+                key={subSection.id}
+                levelId={level.id}
+                subSection={subSection}
+                onProgressUpdate={handleProgressUpdate}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 border-4 border-dashed border-slate-300 rounded-xl">
+            <p className="text-xl font-bold text-slate-400">Belum ada materi di level ini.</p>
+            <p className="text-slate-400">Silakan tambahkan data melalui Database / Migrasi.</p>
+          </div>
+        )}
       </section>
 
       {/* Navigation */}
       <section className="border-t-4 border-foreground bg-secondary">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col sm:flex-row justify-between gap-4">
-            {prevLevel ? (
-              <Link to={`/level/${prevLevel.id}`}>
-                <Button variant="outline" size="lg" className="w-full sm:w-auto">
+            {prevLevelId ? (
+              <Link to={`/level/${prevLevelId}`}>
+                <Button variant="outline" size="lg" className="w-full sm:w-auto font-bold border-2 border-foreground bg-white shadow-sm hover:shadow-md">
                   <ArrowLeft size={18} className="mr-2" />
-                  {prevLevel.id} - {prevLevel.title}
+                  Level {prevLevelId}
                 </Button>
               </Link>
             ) : (
               <div />
             )}
-            {nextLevel && (
-              <Link to={`/level/${nextLevel.id}`}>
-                <Button size="lg" className="w-full sm:w-auto">
-                  {nextLevel.id} - {nextLevel.title}
+            {nextLevelId && (
+              <Link to={`/level/${nextLevelId}`}>
+                <Button size="lg" className="w-full sm:w-auto font-bold bg-blue-600 hover:bg-blue-700 text-white border-2 border-foreground shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] active:translate-y-1 active:shadow-none transition-all">
+                  Lanjut Level {nextLevelId}
                   <ArrowRight size={18} className="ml-2" />
                 </Button>
               </Link>

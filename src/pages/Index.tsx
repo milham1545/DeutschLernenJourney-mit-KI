@@ -1,9 +1,25 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, BookOpen, CreditCard, BarChart3, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { levels } from "@/data/lessons";
+// 1. Import fungsi & tipe dari lessons.ts yang baru
+import { getLevelsFromDB, Level } from "@/data/lessons"; 
+import { useState, useEffect } from "react";
 
 const Index = () => {
+  // 2. Definisikan state 'levels' supaya variabelnya ADA dan tidak error
+  const [levels, setLevels] = useState<Level[]>([]); 
+
+  // 3. Panggil data dari database pas halaman dimuat
+  useEffect(() => {
+    const initData = async () => {
+      const data = await getLevelsFromDB();
+      if (data && data.length > 0) {
+        setLevels(data);
+      }
+    };
+    initData();
+  }, []);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -44,17 +60,15 @@ const Index = () => {
       <section className="border-b-4 border-foreground bg-secondary">
         <div className="container mx-auto px-4 py-16">
           
-          {/* PERBAIKAN DI SINI: Flexbox Wrap */}
           <h2 className="flex flex-wrap items-center justify-center gap-3 text-3xl md:text-4xl font-bold text-center mb-12">
-            {/* whitespace-nowrap menjamin '4' dan 'LEVEL' tetap nempel dalam satu kotak */}
             <span className="bg-foreground text-background px-4 py-2 whitespace-nowrap">
               4 LEVEL
             </span>
-            {/* PEMBELAJARAN akan otomatis turun ke bawah jika layar < 375px */}
             <span>PEMBELAJARAN</span>
           </h2>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Bagian ini SEKARANG AMAN karena 'levels' sudah ada di state */}
             {levels.map((level, index) => (
               <Link
                 key={level.id}
@@ -100,7 +114,7 @@ const Index = () => {
               </div>
               <h3 className="text-xl font-bold mb-2">Flashcard Interaktif</h3>
               <p className="text-muted-foreground">
-                Flashcard dengan kata Jerman di depan dan terjemahan + contoh di belakang untuk hafalan efektif.
+                Kartu flash dengan kata Jerman di depan dan terjemahan + contoh di belakang untuk hafalan efektif.
               </p>
             </div>
             <div className="border-4 border-foreground p-6 bg-card">
@@ -126,7 +140,7 @@ const Index = () => {
           <p className="text-lg opacity-80 mb-8 max-w-xl mx-auto">
             Buat akun. Progress tersimpan otomatis. Mulai belajar sekarang dan ketahui program yang cocok denganmu!
           </p>
-          <Link to="/login">
+          <Link to="/mein-weg">
             <Button size="lg" variant="secondary" className="text-lg px-8">
               Ketahui Programmu
               <ArrowRight className="ml-2" size={20} />

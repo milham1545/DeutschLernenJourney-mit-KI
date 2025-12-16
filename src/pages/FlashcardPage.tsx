@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 // Import Icon lengkap
-import { ChevronLeft, ChevronRight, Shuffle, RotateCcw, List, Layers, Trash2, Volume2 } from "lucide-react";
-import { levels, getFlashcardsForLevel, Vocabulary } from "@/data/lessons";
+import { ChevronLeft, ChevronRight, Shuffle, RotateCcw, List, Layers, Trash2, Volume2, Loader2 } from "lucide-react";
+// PENTING: Import Tipe Data saja, JANGAN import 'levels' atau 'getFlashcardsForLevel' dari file lama
+import { Vocabulary } from "@/data/lessons"; 
 import { saveLastCardPosition, loadLastCardPosition } from "@/utils/progress";
 import FlashCard from "@/components/FlashCard";
 import { Button } from "@/components/ui/button";
@@ -10,43 +11,85 @@ import { useDictionary } from "@/hooks/useDictionary";
 // Import Card component untuk tampilan List
 import { Card, CardContent } from "@/components/ui/card";
 import { useActivityLog } from "@/hooks/useActivityLog";
+// Import Supabase
+import { supabase } from "@/lib/supabase";
+
+// Daftar Level (Kita hardcode untuk tombol navigasi aja, biar cepet render)
+const AVAILABLE_LEVELS = ["A1", "A2", "B1", "B2"];
 
 const FlashcardPage = () => {
   const [selectedLevel, setSelectedLevel] = useState<string>("A1");
   const [currentIndex, setCurrentIdx] = useState(0);
   const [flashcards, setFlashcards] = useState<Vocabulary[]>([]);
   const [isShuffled, setIsShuffled] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // Tambahan state loading
 
   // State Mode Tampilan
   const [viewMode, setViewMode] = useState<"deck" | "list">("deck");
 
-  // Panggil Hook Dictionary (Ambil saveWord, isSaved, words, dan removeWord)
+  // Panggil Hook Dictionary
   const { saveWord, isSaved, words, removeWord } = useDictionary();
-
   const { logActivity } = useActivityLog();
 
   // Filter kata disimpan per Level
   const savedWordsForLevel = words.filter(w => w.source === `Flashcard ${selectedLevel}`);
 
+  // --- 1. FETCH DATA DARI DATABASE (Gantikan getFlashcardsForLevel) ---
   useEffect(() => {
-    const cards = getFlashcardsForLevel(selectedLevel);
-    setFlashcards(cards);
-    
-    // Load posisi card hanya kalau mode deck
-    if (viewMode === "deck") {
-        const savedIndex = loadLastCardPosition(selectedLevel);
-        setCurrentIdx(Math.min(savedIndex, cards.length - 1));
-    }
-    
-    setIsShuffled(false);
-  }, [selectedLevel, viewMode]);
+    const fetchVocabularies = async () => {
+      setIsLoading(true);
+      try {
+        // Query ke Supabase: Ambil vocab yang lesson-nya punya level_id sesuai
+        const { data, error } = await supabase
+          .from("vocabularies")
+          .select(`
+            german,
+            indonesian,
+            example,
+            lessons!inner (
+              level_id
+            )
+          `)
+          .eq("lessons.level_id", selectedLevel);
 
+        if (error) throw error;
+
+        if (data) {
+          // Format data dari DB ke tipe Vocabulary
+          const vocabList: Vocabulary[] = data.map((item: any) => ({
+            german: item.german,
+            indonesian: item.indonesian,
+            example: item.example || ""
+          }));
+
+          setFlashcards(vocabList);
+
+          // Load posisi terakhir (hanya di mode deck)
+          if (viewMode === "deck") {
+            const savedIndex = loadLastCardPosition(selectedLevel);
+            // Validasi index biar gak error kalau datanya berubah
+            setCurrentIdx(Math.min(savedIndex, Math.max(0, vocabList.length - 1)));
+          }
+        }
+      } catch (err) {
+        console.error("Gagal mengambil flashcard:", err);
+      } finally {
+        setIsLoading(false);
+        setIsShuffled(false);
+      }
+    };
+
+    fetchVocabularies();
+  }, [selectedLevel]); // Jalankan ulang kalau user ganti level
+
+  // Simpan posisi terakhir
   useEffect(() => {
     if (flashcards.length > 0 && viewMode === "deck") {
       saveLastCardPosition(selectedLevel, currentIndex);
     }
   }, [currentIndex, selectedLevel, flashcards.length, viewMode]);
 
+  // --- LOGIKA NAVIGASI KARTU ---
   const goToNext = useCallback(() => {
     if (currentIndex < flashcards.length - 1) {
       setCurrentIdx((prev) => prev + 1);
@@ -60,8 +103,10 @@ const FlashcardPage = () => {
   }, [currentIndex]);
 
   const goToRandom = useCallback(() => {
-    const randomIndex = Math.floor(Math.random() * flashcards.length);
-    setCurrentIdx(randomIndex);
+    if (flashcards.length > 0) {
+      const randomIndex = Math.floor(Math.random() * flashcards.length);
+      setCurrentIdx(randomIndex);
+    }
   }, [flashcards.length]);
 
   const shuffleCards = () => {
@@ -71,29 +116,38 @@ const FlashcardPage = () => {
     setIsShuffled(true);
   };
 
-  const resetOrder = () => {
-    const cards = getFlashcardsForLevel(selectedLevel);
-    setFlashcards(cards);
+  const resetOrder = async () => {
+    setIsLoading(true);
+    // Fetch ulang biar urutan balik ke awal database (cara paling bersih)
+    const { data } = await supabase
+        .from("vocabularies")
+        .select("german, indonesian, example, lessons!inner(level_id)")
+        .eq("lessons.level_id", selectedLevel);
+    
+    if (data) {
+        const vocabList: Vocabulary[] = data.map((item: any) => ({
+            german: item.german,
+            indonesian: item.indonesian,
+            example: item.example || ""
+        }));
+        setFlashcards(vocabList);
+    }
     setCurrentIdx(0);
     setIsShuffled(false);
+    setIsLoading(false);
   };
 
-  // --- LOGIKA BARU (TOGGLE SIMPAN/HAPUS) ---
+  // --- LOGIKA BOOKMARK ---
   const handleBookmark = () => {
     const currentCard = flashcards[currentIndex]; 
     if (currentCard) {
-      // Cek apakah sudah disimpan?
       if (isSaved(currentCard.german)) {
-        // JIKA SUDAH -> Cari ID-nya lalu HAPUS
         const wordToDelete = words.find(w => w.german === currentCard.german);
         if (wordToDelete) {
           removeWord(wordToDelete.id);
         }
       } else {
-         // Logika simpan
          saveWord(currentCard.german, currentCard.indonesian, `Flashcard ${selectedLevel}`);
-         
-         // 3. TAMBAHKAN LOG DI SINI
          logActivity("word", `Menyimpan flashcard "${currentCard.german}" (${selectedLevel})`);
       }
     }
@@ -118,7 +172,7 @@ const FlashcardPage = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [goToNext, goToPrevious, goToRandom, currentIndex, flashcards, viewMode, words]); // Tambah words ke dependency
+  }, [goToNext, goToPrevious, goToRandom, currentIndex, flashcards, viewMode, words]);
 
   return (
     <div className="min-h-screen">
@@ -134,18 +188,18 @@ const FlashcardPage = () => {
             <div className="flex flex-wrap items-center gap-4">
                 {/* Level Buttons */}
                 <div className="flex gap-2">
-                    {levels.map((level) => (
+                    {AVAILABLE_LEVELS.map((lvl) => (
                     <button
-                        key={level.id}
-                        onClick={() => { setSelectedLevel(level.id); setCurrentIdx(0); setViewMode("deck"); }}
+                        key={lvl}
+                        onClick={() => { setSelectedLevel(lvl); setCurrentIdx(0); setViewMode("deck"); }}
                         className={cn(
                         "px-4 py-2 font-bold border-4 border-foreground transition-all text-sm",
-                        selectedLevel === level.id
+                        selectedLevel === lvl
                             ? "bg-foreground text-background shadow-sm"
                             : "bg-card hover:bg-accent"
                         )}
                     >
-                        {level.id}
+                        {lvl}
                     </button>
                     ))}
                 </div>
@@ -192,7 +246,7 @@ const FlashcardPage = () => {
       </section>
 
       {/* Progress Bar Area (Hanya Muncul di Mode Deck) */}
-      {viewMode === "deck" && (
+      {viewMode === "deck" && !isLoading && (
         <section className="container mx-auto px-4">
             {flashcards.length > 0 ? (
             <>
@@ -222,8 +276,16 @@ const FlashcardPage = () => {
       {/* MAIN CONTENT AREA */}
       <section className="container mx-auto px-4 py-12">
         
+        {/* === LOADING SPINNER (Baru) === */}
+        {isLoading && (
+            <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="h-12 w-12 animate-spin text-slate-400 mb-4" />
+                <p className="font-bold text-slate-500">Menyiapkan kartu...</p>
+            </div>
+        )}
+
         {/* === MODE 1: DECK (KARTU) === */}
-        {viewMode === "deck" && flashcards.length > 0 && (
+        {!isLoading && viewMode === "deck" && flashcards.length > 0 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-300">
             <FlashCard
               key={`${selectedLevel}-${currentIndex}-${flashcards[currentIndex]?.german}`}
@@ -283,7 +345,7 @@ const FlashcardPage = () => {
               )}
             </div>
 
-            {/* Keyboard Hints (Hidden di Mobile/Tablet) */}
+            {/* Keyboard Hints */}
             <div className="mt-8 text-center text-sm text-muted-foreground hidden lg:block">
               <p className="font-mono">
                 Gunakan tombol <kbd className="px-2 py-1 bg-accent border border-foreground rounded text-xs mx-1">←</kbd>
@@ -296,7 +358,7 @@ const FlashcardPage = () => {
         )}
 
         {/* === MODE 2: LIST (DAFTAR SIMPANAN) === */}
-        {viewMode === "list" && (
+        {!isLoading && viewMode === "list" && (
             <div className="max-w-2xl mx-auto animate-in fade-in zoom-in-95 duration-200">
                 <div className="mb-6 flex justify-between items-end border-b-2 border-slate-200 pb-4">
                     <div>
